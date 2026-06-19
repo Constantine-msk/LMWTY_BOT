@@ -132,14 +132,26 @@ async def lang_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["lang"] = "en" if current == "ru" else "ru"
     await update.message.reply_text(t("lang_changed", context))
 
+async def error_handler(update, context):
+    logger.error(f"Exception: {context.error}")
+
 if __name__ == "__main__":
     if not BOT_TOKEN:
         logger.error("BOT_TOKEN is missing!")
     else:
-        app = ApplicationBuilder().token(BOT_TOKEN).build()
+        app = (
+            ApplicationBuilder()
+            .token(BOT_TOKEN)
+            .connect_timeout(30)
+            .read_timeout(30)
+            .write_timeout(30)
+            .pool_timeout(30)
+            .build()
+        )
         app.add_handler(CommandHandler("start", start))
         app.add_handler(CommandHandler("stats", stats_cmd))
         app.add_handler(CommandHandler("lang", lang_cmd))
         app.add_handler(CallbackQueryHandler(handle_button))
         app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
+        app.add_error_handler(error_handler)
         app.run_polling(drop_pending_updates=True)
